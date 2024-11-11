@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <meta charset="utf-8" />
+        <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="description" content="" />
+        <meta name="author" content="" />
+        <title>Usuarios - Proyecto</title>
+        <!-- Bootstrap CSS -->
+		<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" crossorigin="anonymous">
+		<link href="css/styles.css" rel="stylesheet" />
+		
+		<!-- jQuery -->
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+		
+		<!-- FontAwesome -->
+		<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
+		
+		<!-- DataTables CSS -->
+		<link href="https://cdn.datatables.net/1.11.5/css/jquery.dataTables.min.css" rel="stylesheet" />
+		
+		<!-- DataTables Buttons CSS compatible con Bootstrap 5 -->
+		<link href="https://cdn.datatables.net/buttons/2.3.6/css/buttons.bootstrap5.min.css" rel="stylesheet"/>
+		<link rel="stylesheet" href="https://cdn.datatables.net/responsive/2.2.7/css/responsive.dataTables.min.css">
+		
+		<!-- DataTables JS -->
+		<script src="https://cdn.datatables.net/1.11.5/js/jquery.dataTables.min.js"></script>
+		<script src="https://cdn.datatables.net/responsive/2.2.7/js/dataTables.responsive.min.js"></script>
+		
+		<!-- DataTables Buttons JS -->
+		<script src="https://cdn.datatables.net/buttons/2.3.6/js/dataTables.buttons.min.js"></script>
+		<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.bootstrap5.min.js"></script>
+		
+		<!-- JSZip for Excel export -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.1.3/jszip.min.js"></script>
+		
+		<!-- PDFMake for PDF export -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/pdfmake.min.js"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.1.53/vfs_fonts.js"></script>
+		
+		<!-- Botones de Excel, PDF, Print y visibilidad de columnas -->
+		<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.html5.min.js"></script>
+		<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.print.min.js"></script>
+		<script src="https://cdn.datatables.net/buttons/2.3.6/js/buttons.colVis.min.js"></script>
+
+    
+    <script>
+          $(document).ready(function() {
+        	
+            var table = $('#datatablesSimple').DataTable({
+                columnDefs: [
+                    { targets: [0], visible: false } // Oculta la primera y la última columna
+                ],
+                language: {
+                    "info": "Mostrando _START_ a _END_ de _TOTAL_ entradas",
+                    "infoEmpty": "No hay entradas disponibles",
+                    "infoFiltered": "(filtrado de _MAX_ entradas totales)",
+                    "search": "Buscar:",
+                    "paginate": {
+                        "next": "Siguiente",
+                        "previous": "Anterior"
+                    },
+                    "lengthMenu": "Mostrar _MENU_ entradas"
+                },
+                scrollX: true,
+                scrollY: "400px",
+                scrollCollapse: true,
+                responsive: true,
+                autoWidth: true,
+                dom: 'lBfrtip',
+                buttons: [
+                    {
+                        extend: 'excel',
+                        text: 'Excel',
+                        className: 'btn btn-success'
+                    },
+                    {
+                        extend: 'pdf',
+                        text: 'PDF',
+                        className: 'btn btn-danger'
+                    },
+                    {
+                        extend: 'print',
+                        text: 'Imprimir',
+                        className: 'btn btn-primary'
+                    },
+                    {
+                        extend: 'csv',
+                        text: 'CSV',
+                        className: 'btn btn-info'
+                    }
+                    
+                ]
+            });
+
+            $('#datatablesSimple').on('click', '.edit-details', function() {
+                var row = $(this).closest('tr');
+                var data = table.row(row).data();
+
+                $('#modalId').val(data[0]);
+                $('#modalName').val(data[1]);
+                $('#modalEmail').val(data[2]);
+                $('#modalEdad').val(data[3]);
+                $('#errorDiv').addClass('d-none'); 
+                $('#errorMessage').text('');
+                
+             // Cambiar título del modal
+                $('#userModalLabel').text('Editar Usuario');
+                
+                // Cambiar el texto del botón de guardar
+                $('#saveChanges').text('Actualizar Usuario');
+
+                var myModal = new bootstrap.Modal(document.getElementById('userModal'), {});
+                myModal.show();
+            });
+            
+            $('#btnAddUser').click(function() {
+                // Vaciar los campos del modal
+                $('#modalId').val('');
+                $('#modalName').val('');
+                $('#modalEmail').val('');
+                $('#modalEdad').val('');
+                $('#errorDiv').addClass('d-none'); 
+                $('#errorMessage').text('');
+
+                // Cambiar título del modal
+                $('#userModalLabel').text('Nuevo Usuario');
+                
+                // Cambiar el texto del botón de guardar
+                $('#saveChanges').text('Crear Usuario');
+                
+                // Mostrar el modal
+                var myModal = new bootstrap.Modal(document.getElementById('userModal'), {});
+                myModal.show();
+            });
+
+         // Al guardar los cambios con $.ajax()
+            $('#saveChanges').click(function() {
+                var userId = $('#modalId').val();
+                var usuario = {
+                    id: userId,
+                    nombre: $('#modalName').val(),
+                    correo: $('#modalEmail').val(),
+                    edad: $('#modalEdad').val(),
+                };
+
+                $.ajax({
+                    url: '/EmailWeb/guardarUsuario',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify(usuario),
+                    success: function(data) {
+                        console.log('Usuario guardado:', data);
+                        if (data === 'OK') {
+                            window.location.href = "/EmailWeb/index";
+                        } else {
+                            $('#errorDiv').removeClass('d-none');
+                            $('#errorMessage').text('Ocurrió un problema:' +data );
+                        }
+                    },
+                    error: function(jqXHR, textStatus, errorThrown) {
+                        console.error('Error:', textStatus, errorThrown);
+                        $('#errorDiv').removeClass('d-none');
+                        $('#errorMessage').text('Ocurrió un problema:' +errorThrown );
+                    }
+                });
+            });
+            
+            
+            var rowToDelete; // Variable para almacenar la fila a eliminar
+
+            // Manejar clic en botón Delete
+            $('#datatablesSimple').on('click', '.delete-details', function() {
+            	  rowToDelete = $(this).closest('tr'); // Almacenar la fila a eliminar
+                  var data = table.row(rowToDelete).data();
+                  var id = data[0];
+                  var name = data[1]; // Obtener el nombre del usuario
+                  
+                  // Actualizar el contenido del modal
+                  $('#userNameToDelete').text(name);
+                  $('#userIdToDelete').val(id);
+                // Mostrar el modal de confirmación
+                var myModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'), {});
+                myModal.show();
+            });
+
+            // Manejar clic en botón Confirmar Eliminación
+            $('#confirmDeleteButton').click(function() {
+            	 var myModal = new bootstrap.Modal(document.getElementById('confirmDeleteModal'), {});
+            	
+            });
+        });
+    </script>
+    </head>
+    <body class="sb-nav-fixed">
+
+    <!-- Incluir encabezado -->
+    <div th:insert="fragmentos/header :: header"></div>
+       
+        <div id="layoutSidenav">
+           
+      
+            <div id="layoutSidenav_content">
+                <main>
+                 <div class="container-fluid px-4">
+                 <h1 class="mt-4">Usuarios</h1>
+                   <div class="card mb-4">
+                            <div class="card-header">
+                                <i hidden class="fas fa-table me-1"></i>
+                                <button  id="btnAddUser" class="btn btn-primary mb-3">Nuevo</button>
+                            </div>
+                            <div class="card-body table-responsive">
+                                <table id="datatablesSimple" class="display nowrap" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th>Id</th>
+                                            <th>Usuario</th>
+                                            <th>Correo</th>
+                                            <th>Edad</th>
+                                             <th>Acciones</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr th:each="user : ${liUsuario}">
+                                            <td th:text="${user.id}"></td>
+							                <td th:text="${user.nombre}"></td>
+							                <td th:text="${user.correo}"></td>
+							                <td th:text="${user.edad}"></td>
+							               
+							                <td><button class="btn btn-warning btn-sm edit-details">Editar</button>
+							                <button hidden class="btn btn-danger btn-sm delete-details">Borrar</button></td>
+                                        </tr>
+                                        
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Modal -->
+<div class="modal fade" id="userModal" tabindex="-1" aria-labelledby="userModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="userModalLabel">Editar Usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <form id="userForm">
+          <div class="mb-3" hidden>
+            <label for="modalId" class="form-label">ID</label>
+            <input type="text" class="form-control" id="modalId" disabled>
+          </div>
+          <div class="mb-3">
+            <label for="modalName" class="form-label">Nombre de usuario</label>
+            <input type="text" class="form-control" id="modalName" required>
+          </div>
+          <div class="mb-3">
+            <label for="modalEmail" class="form-label">Correo</label>
+            <input type="email" class="form-control" id="modalEmail" required>
+          </div>
+          <div class="mb-3">
+            <label for="modalEdad" class="form-label">Edad</label>
+            <input type="number" class="form-control" id="modalEdad" required>
+          </div>
+        </form>
+      </div>
+      <div id="errorDiv" class="alert alert-danger d-none">
+    <span id="errorMessage"></span>
+	</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="saveChanges">Guardar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de Confirmación -->
+<div class="modal fade" id="confirmDeleteModal" tabindex="-1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="confirmDeleteModalLabel">Confirmar eliminación usuario</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <p>¿Estás seguro de que deseas eliminar al usuario <strong id="userNameToDelete"></strong>?</p>
+        <input type="hidden" id="userIdToDelete">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-danger" id="confirmDeleteButton">Eliminar</button>
+      </div>
+    </div>
+  </div>
+</div>
+                                   </main>
+                <!-- Incluir pie de página -->
+    			<div th:insert="fragmentos/footer :: footer"></div>
+            </div>
+        </div>
+        
+         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+        <script src="js/scripts.js"></script>
+    </body>
+</html>
